@@ -3,15 +3,35 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "dev": "next dev --webpack --hostname 127.0.0.1 --port 3000",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1 --port 3000",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "pnpm exec tsc -p tsconfig.unit.json && node --test \".tmp-test-dist/tests/unit/**/*.test.js\"",
+    "test:api": "node scripts/api-contract-test.mjs",
+    "test": "pnpm run lint && pnpm run typecheck && pnpm run test:unit",
+    "test:smoke": "node scripts/smoke-test.mjs",
+    "docs:screenshots": "node scripts/capture-screenshots.mjs",
+    "verify": "pnpm run test && pnpm run build && pnpm run test:smoke && pnpm run test:api"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.46",
+    "@ai-sdk/openai": "^3.0.31",
+    "@metamask/sdk": "^0.34.0",
+    "@rainbow-me/rainbowkit": "^2.2.10",
+    "@tanstack/react-query": "^5.90.21",
+    "@x402/core": "^2.4.0",
+    "@x402/evm": "^2.4.0",
+    "@x402/fetch": "^2.4.0",
+    "@x402/next": "^2.4.0",
+    "ai": "^6.0.97",
+    "dompurify": "^3.3.1",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "viem": "^2.46.3",
+    "wagmi": "^3.5.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

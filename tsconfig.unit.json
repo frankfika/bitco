@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": ".tmp-test-dist",
+    "rootDir": ".",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "incremental": false
+  },
+  "include": [
+    "src/lib/agent-utils.ts",
+    "src/lib/rate-limit.ts",
+    "src/lib/agents.ts",
+    "src/lib/ai-provider.ts",
+    "tests/unit/**/*.ts"
+  ]
+}

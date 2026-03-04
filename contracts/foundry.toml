@@ -1,0 +1,11 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.20"
+
+[rpc_endpoints]
+goat_testnet3 = "https://rpc.testnet3.goat.network"
+
+[etherscan]
+goat_testnet3 = { key = "${ETHERSCAN_API_KEY}", url = "https://explorer.testnet3.goat.network/api" }
