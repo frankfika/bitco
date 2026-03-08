@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.46",
-    "@ai-sdk/openai": "^3.0.31",
+    "@ai-sdk/openai": "^3.0.41",
     "@metamask/sdk": "^0.34.0",
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.90.21",
