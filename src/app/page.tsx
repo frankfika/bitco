@@ -86,7 +86,7 @@ export default function Home() {
           {/* How it works */}
           <div
             className="glass-panel mb-14 p-8"
-            style={{ animation: "fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.15s forwards", opacity: 0 }}
+            style={{ animation: "fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.15s both" }}
           >
             <h3 className="mb-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
               <span className="h-px w-6 bg-gradient-to-r from-bitcoin to-transparent" />
@@ -128,7 +128,7 @@ export default function Home() {
           {/* Agent Cards */}
           <div
             className="grid grid-cols-1 gap-6 sm:grid-cols-2"
-            style={{ animation: "fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.3s forwards", opacity: 0 }}
+            style={{ animation: "fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.3s both" }}
           >
             {agents.map((agent) => (
               <AgentCard key={agent.id} agent={agent} />
@@ -138,7 +138,7 @@ export default function Home() {
           {/* Contract info */}
           <div
             className="mt-16 text-center"
-            style={{ animation: "fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.45s forwards", opacity: 0 }}
+            style={{ animation: "fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.45s both" }}
           >
             <p className="text-xs text-text-tertiary">
               Agent Registry Contract:{" "}

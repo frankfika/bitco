@@ -13,17 +13,56 @@ export async function generateAgentResponse(
   message: string
 ): Promise<AIResponse> {
   const provider = process.env.AI_PROVIDER ?? "auto";
+  const hasOpenAIKey = isUsableApiKey(process.env.OPENAI_API_KEY);
+  const hasAnthropicKey = isUsableApiKey(process.env.ANTHROPIC_API_KEY);
 
-  if (provider === "openai" || (provider === "auto" && process.env.OPENAI_API_KEY)) {
+  if (provider === "openai") {
+    if (!hasOpenAIKey) {
+      throw new Error(
+        "OPENAI_API_KEY is required when AI_PROVIDER=openai. Use AI_PROVIDER=mock for local demo."
+      );
+    }
     return generateWithOpenAI(agent, message);
   }
 
-  if (provider === "anthropic" || (provider === "auto" && process.env.ANTHROPIC_API_KEY)) {
+  if (provider === "anthropic") {
+    if (!hasAnthropicKey) {
+      throw new Error(
+        "ANTHROPIC_API_KEY is required when AI_PROVIDER=anthropic. Use AI_PROVIDER=mock for local demo."
+      );
+    }
+    return generateWithAnthropic(agent, message);
+  }
+
+  if (provider === "auto" && hasOpenAIKey) {
+    return generateWithOpenAI(agent, message);
+  }
+
+  if (provider === "auto" && hasAnthropicKey) {
     return generateWithAnthropic(agent, message);
   }
 
   // Mock mode: simulate AI behavior for demo/testing
   return generateMock(agent, message);
+}
+
+function isUsableApiKey(raw: string | undefined): boolean {
+  if (raw === undefined) return false;
+  const normalized = raw.trim();
+  if (normalized.length === 0) return false;
+
+  const lower = normalized.toLowerCase();
+  if (
+    lower === "sk-xxx" ||
+    lower === "your-openai-api-key" ||
+    lower === "your-anthropic-api-key" ||
+    lower === "your_api_key" ||
+    lower === "changeme"
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 async function generateWithOpenAI(

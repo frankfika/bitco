@@ -16,9 +16,11 @@ export default function ChatPage() {
   const agentId = params.agentId as string;
   const agent = getAgent(agentId);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [showTxPanel, setShowTxPanel] = useState(false);
 
   const handleTransaction = useCallback((tx: Transaction) => {
     setTransactions((prev) => [...prev, tx]);
+    setShowTxPanel(true); // auto-reveal on mobile when a payment happens
   }, []);
 
   if (!agent) {
@@ -73,6 +75,16 @@ export default function ChatPage() {
           <span className="hidden sm:inline-flex items-center rounded-full bg-bitcoin/10 px-3 py-1 font-mono text-xs text-bitcoin">
             {agent.price} / msg
           </span>
+          {/* Mobile: toggle payment flow panel */}
+          {transactions.length > 0 && (
+            <button
+              onClick={() => setShowTxPanel((v) => !v)}
+              className="lg:hidden inline-flex items-center gap-1.5 rounded-full border border-bitcoin/30 bg-bitcoin/10 px-3 py-1 text-xs font-medium text-bitcoin"
+            >
+              <span className="inline-block h-1.5 w-1.5 animate-pulse-glow rounded-full bg-bitcoin" />
+              {transactions.length} payment{transactions.length !== 1 ? "s" : ""}
+            </button>
+          )}
           <ConnectButton accountStatus="avatar" chainStatus="icon" />
         </div>
       </header>
@@ -80,12 +92,29 @@ export default function ChatPage() {
       {/* Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Chat */}
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col min-w-0">
           <ChatInterface agent={agent} onTransaction={handleTransaction} />
         </div>
 
-        {/* Sidebar: Transaction Flow */}
-        <div className="hidden w-80 shrink-0 border-l border-glass-border p-4 lg:block bg-background/40 backdrop-blur-sm">
+        {/* Sidebar: Transaction Flow — always visible on lg, toggled on mobile */}
+        <div
+          className={`${
+            showTxPanel ? "flex" : "hidden"
+          } lg:flex w-80 shrink-0 flex-col border-l border-glass-border p-4 bg-background/40 backdrop-blur-sm`}
+        >
+          {/* Mobile close button */}
+          <div className="mb-3 flex items-center justify-between lg:hidden">
+            <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+              Payment Flow
+            </span>
+            <button
+              onClick={() => setShowTxPanel(false)}
+              className="text-xs text-text-tertiary hover:text-text-secondary"
+            >
+              Close
+            </button>
+          </div>
+
           <TransactionFlow transactions={transactions} />
           {transactions.length === 0 && (
             <div className="glass-panel-sm flex h-40 items-center justify-center">

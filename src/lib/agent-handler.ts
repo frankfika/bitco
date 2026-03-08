@@ -8,9 +8,16 @@ import {
   validateAgentMessage,
 } from "./agent-utils";
 import { checkAgentRateLimit } from "./rate-limit";
+import { getRequestBaseUrl } from "./request-url";
 
-const MAX_REQUEST_BYTES = Number(process.env.MAX_REQUEST_BYTES ?? "16384");
-const MAX_MESSAGE_CHARS = Number(process.env.MAX_MESSAGE_CHARS ?? "4000");
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  const parsed = Number.parseInt(raw ?? "", 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
+const MAX_REQUEST_BYTES = parsePositiveInt(process.env.MAX_REQUEST_BYTES, 16384);
+const MAX_MESSAGE_CHARS = parsePositiveInt(process.env.MAX_MESSAGE_CHARS, 4000);
 
 function getContentLength(request: NextRequest): number | null {
   const raw = request.headers.get("content-length");
@@ -105,29 +112,60 @@ async function handleCollaboration(
 ): Promise<NextResponse> {
   const otherAgent = getOtherAgent(agent.id)!;
   const x402Enabled = process.env.X402_ENABLED === "true";
+  const delegatedQueryValidation = validateAgentMessage(
+    collaboration.query,
+    MAX_MESSAGE_CHARS
+  );
+  const safeQuery = delegatedQueryValidation.ok
+    ? delegatedQueryValidation.sanitized
+    : sanitizeAgentInput(collaboration.query).trim();
+
+  if (!delegatedQueryValidation.ok) {
+    return NextResponse.json({
+      reply: `I couldn't delegate to ${otherAgent.name} because the generated collaboration query was invalid.`,
+      agent: agent.name,
+      collaboration: {
+        from: agent.name,
+        to: otherAgent.name,
+        reason: collaboration.reason,
+        price: otherAgent.price,
+        failed: true,
+        error: delegatedQueryValidation.error,
+      },
+    });
+  }
 
   try {
     let reply: string;
 
     if (x402Enabled) {
       // Production: call other agent's API via x402 payment (real HTTP call)
-      const baseUrl = getBaseUrl(request);
+      const baseUrl = getRequestBaseUrl(request);
       const { getAgentFetch } = await import("./x402-client");
       const agentFetch = getAgentFetch();
       const res = await agentFetch(`${baseUrl}${otherAgent.endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: collaboration.query }),
+        body: JSON.stringify({ message: safeQuery }),
       });
-      const data = (await res.json()) as { reply: string };
-      reply = data.reply;
+      if (!res.ok) {
+        throw new Error(
+          `Collaboration call to ${otherAgent.name} failed with status ${res.status}`
+        );
+      }
+      let data: { reply?: unknown };
+      try {
+        data = (await res.json()) as { reply?: unknown };
+      } catch {
+        throw new Error(
+          `Collaboration response from ${otherAgent.name} was not valid JSON`
+        );
+      }
+      reply = normalizeDelegatedReply(otherAgent, data.reply);
     } else {
       // Dev/demo: call other agent's handler directly (avoids HTTP deadlock)
-      const { text } = await generateAgentResponse(
-        otherAgent,
-        sanitizeAgentInput(collaboration.query)
-      );
-      reply = text;
+      const { text } = await generateAgentResponse(otherAgent, safeQuery);
+      reply = normalizeDelegatedReply(otherAgent, text);
     }
 
     return NextResponse.json({
@@ -142,7 +180,7 @@ async function handleCollaboration(
     });
   } catch (error) {
     return NextResponse.json({
-      reply: `I tried to consult ${otherAgent.name} but couldn't reach them. The question "${collaboration.query}" is outside my core expertise.`,
+      reply: `I tried to consult ${otherAgent.name} but couldn't reach them. The question "${safeQuery}" is outside my core expertise.`,
       agent: agent.name,
       collaboration: {
         from: agent.name,
@@ -156,8 +194,24 @@ async function handleCollaboration(
   }
 }
 
-function getBaseUrl(request: NextRequest): string {
-  const host = request.headers.get("host") ?? "localhost:3000";
-  const protocol = host.startsWith("localhost") ? "http" : "https";
-  return `${protocol}://${host}`;
+function normalizeDelegatedReply(
+  delegatedAgent: AgentConfig,
+  candidate: unknown
+): string {
+  if (typeof candidate !== "string" || candidate.trim().length === 0) {
+    throw new Error(
+      `Collaboration response from ${delegatedAgent.name} is missing a valid reply`
+    );
+  }
+
+  try {
+    const parsed = JSON.parse(candidate);
+    if (isCollaborationPayload(parsed)) {
+      return `${delegatedAgent.name} requested an additional delegation hop. Recursive delegation is blocked; please ask a more specific question directly to ${delegatedAgent.name}.`;
+    }
+  } catch {
+    // Normal text response.
+  }
+
+  return candidate;
 }

@@ -82,11 +82,23 @@ function getClientAddress(request: NextRequest): string {
   return "unknown";
 }
 
-const AGENT_RATE_LIMIT_MAX_REQUESTS = Number(
-  process.env.AGENT_RATE_LIMIT_MAX_REQUESTS ?? "30"
+function parseRateLimitNumber(raw: string | undefined, fallback: number): number {
+  if (raw === undefined) return fallback;
+  const normalized = raw.trim();
+  if (normalized.length === 0) return fallback;
+
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.trunc(parsed);
+}
+
+const AGENT_RATE_LIMIT_MAX_REQUESTS = parseRateLimitNumber(
+  process.env.AGENT_RATE_LIMIT_MAX_REQUESTS,
+  30
 );
-const AGENT_RATE_LIMIT_WINDOW_MS = Number(
-  process.env.AGENT_RATE_LIMIT_WINDOW_MS ?? "60000"
+const AGENT_RATE_LIMIT_WINDOW_MS = parseRateLimitNumber(
+  process.env.AGENT_RATE_LIMIT_WINDOW_MS,
+  60_000
 );
 
 const agentLimiter = new FixedWindowRateLimiter(
