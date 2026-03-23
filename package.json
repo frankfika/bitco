@@ -16,7 +16,7 @@
     "verify": "pnpm run test && pnpm run build && pnpm run test:smoke && pnpm run test:api"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.46",
+    "@ai-sdk/anthropic": "^3.0.58",
     "@ai-sdk/openai": "^3.0.31",
     "@metamask/sdk": "^0.34.0",
     "@rainbow-me/rainbowkit": "^2.2.10",
